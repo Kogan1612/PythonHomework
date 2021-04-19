@@ -1,0 +1,1 @@
+[{"Id": "212073563", "Name": "Itai Kogan", "Code": "1234", "Balance": 208.1}, {"Id": "111111111", "Name": "Alexander The Great", "Code": "3456", "Balance": 797.518}, {"Id": "123456789", "Name": "Ludmila The Great", "Code": "1234", "Balance": 236.072}]
