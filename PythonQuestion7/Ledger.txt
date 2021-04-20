@@ -1,1 +1,1 @@
-[{"Id": "212073563", "Name": "Itai Kogan", "Code": "1234", "Balance": 208.1}, {"Id": "111111111", "Name": "Alexander The Great", "Code": "3456", "Balance": 797.518}, {"Id": "123456789", "Name": "Ludmila The Great", "Code": "1234", "Balance": 236.072}]
+[{"Id": "212073563", "Name": "Itai Kogan", "Code": "1234", "Balance": 1619.58}, {"Id": "111111111", "Name": "Alexander The Great", "Code": "1111", "Balance": 1380.9300000000003}, {"Id": "333333333", "Name": "dsad", "Code": "1231", "Balance": -321.0}, {"Id": "444444444", "Name": "adaa", "Code": "4444", "Balance": -321.432}]
