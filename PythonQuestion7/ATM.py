@@ -1,3 +1,4 @@
+import datetime
 import socket
 import threading
 
@@ -72,7 +73,9 @@ class ATM:
             try:
                 data = self.socket.recv(1024).decode()
                 if len(data) != 0:
-                    print("\nThe bank said: " + data)  # Print message from the bank
+                    now = datetime.datetime.now()
+                    print("\nNow: " + str(now))
+                    print("The bank said: " + data)  # Print message from the bank
                     self.latest_message = data
             except:
                 pass

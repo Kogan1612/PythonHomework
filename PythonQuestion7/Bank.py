@@ -23,7 +23,7 @@ class Bank:
             self.connected_atms[self.thread_count] = connection
             self.thread_count += 1
             print("We now have " + str(len(self.connected_atms)) + " connected ATMs")
-            main_thread = threading.Thread(target=self.handle_atm, args=(self.thread_count-1, ))
+            main_thread = threading.Thread(target=self.handle_atm, args=(self.thread_count-1, ))  # The args is a tuple
             main_thread.start()  # Start the thread that handles the atm's requests
         bank_socket.close()
 
@@ -34,12 +34,13 @@ class Bank:
         if self.records_lock:
             print("Lock is activated. Need to wait.")
             self.wait_for_lock_to_end()
+        print("Locked")
         self.records_lock = True
 
     def wait_for_lock_to_end(self):
         """The function waits until the services are unlocked."""
         while self.records_lock:
-            time.sleep(1)
+            pass
 
     def services_unlock(self):
         """The function unlocks the balance services."""
@@ -58,7 +59,7 @@ class Bank:
                 continue
             if len(data) == 0:
                 continue
-            data_parts = data.split("*")
+            data_parts = data.split("*")  # The sent data has * to divide it's parts
             if data_parts[0] == "1":
                 print("\nProtocol 1")
                 id = data_parts[1]
@@ -66,9 +67,11 @@ class Bank:
                 code = data_parts[3]
                 balance = float(data_parts[4])
                 self.services_lock()  # Lock balance services
-                self.create_an_account(id, name, code, balance)  # Create an account
+                if self.create_an_account(id, name, code, balance):  # Create an account
+                    message = "Account Created.\n"
+                else:
+                    message = "Id is taken. You are an impostor\n"
                 self.services_unlock()  # Unlock balance services
-                message = "Account Created.\n"
                 connection.send(message.encode())
                 print("Sent to ATM from protocol 1")
             elif data_parts[0] == "2":
@@ -151,6 +154,9 @@ class Bank:
 
     def create_an_account(self, id, name, code, balance):
         """The function creates a new account in the bank"""
+        if self.is_id_in_records(id):
+            print("ID EXISTS")
+            return False
         account = {"Id": id,
                    "Name": name,
                    "Code": code,
@@ -158,7 +164,7 @@ class Bank:
         self.bank_records.append(account)
         print("The new list is: " + str(self.bank_records))
         self.save_records()
-        self.records_lock = False
+        return True
 
     def validate_secret_code(self, id, code):
         """The function receives a person's id and a secret code and returns True if there is an account with
@@ -193,6 +199,7 @@ class Bank:
     def make_a_transaction(self, from_id, from_code, to_id, amount_of_money):
         """If possible the function makes a transition of the given amount of money from a given account to another
         given account"""
+        time.sleep(10)  # I'm adding a delay to check if two transactions can occur simultaneously
         if not self.is_id_in_records(from_id):
             return "Sorry but who is this person you are trying to send money from?"
         elif not self.is_id_in_records(to_id):
@@ -204,7 +211,6 @@ class Bank:
         elif not self.make_sure_account_has_money(from_id, amount_of_money):
             return "Sorry mate, but you don't have enough money to send."
         else:
-            time.sleep(10)  # I'm adding a delay to check if two transactions can occur simultaneously
             for account in self.bank_records:
                 if account["Id"] == from_id:
                     account["Balance"] -= amount_of_money
