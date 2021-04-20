@@ -47,6 +47,57 @@ class Bank:
         print("Unlocked")
         self.records_lock = False
 
+    def handle_tasks(self):
+        while True:
+            if len(self.task_queue) != 0:
+                task = self.task_queue.pop(0)  # Take the first task out of the queue
+                print("Task: " + str(task))
+                key_connection_id = list(task.keys())[0]  # There is only one key in the dictionary
+                print("Connection id: " + str(key_connection_id))
+                atm_parameters = task[key_connection_id]
+                connection = self.connected_atms[key_connection_id]
+                if atm_parameters[0] == "1":
+                    print("\nProtocol 1")
+                    id = atm_parameters[1]
+                    name = atm_parameters[2]
+                    code = atm_parameters[3]
+                    balance = float(atm_parameters[4])
+                    if self.create_an_account(id, name, code, balance):  # Create an account
+                        message = "Account Created.\n"
+                    else:
+                        message = "Id is taken. You are an impostor\n"
+                    connection.send(message.encode())
+                    print("Sent to ATM from protocol 1")
+                elif atm_parameters[0] == "2":
+                    print("\nProtocol 2")
+                    id = atm_parameters[1]
+                    code = atm_parameters[2]
+                    if self.validate_secret_code(id, code):
+                        message = "Yes, the code matches the id\n"
+                    else:
+                        message = "No, the code doesn't match the id\n"
+                    connection.send(message.encode())
+                    print("Sent to ATM from protocol 2")
+                elif atm_parameters[0] == "3":
+                    print("\nProtocol 3")
+                    from_id = atm_parameters[1]
+                    code = atm_parameters[2]
+                    to_id = atm_parameters[3]
+                    money = float(atm_parameters[4])
+                    message = self.make_a_transaction(from_id, code, to_id, money)
+                    connection.send(message.encode())
+                    print("Sent to ATM from protocol 3")
+                elif atm_parameters[0] == "4":
+                    print("\nProtocol 4")
+                    id = atm_parameters[1]
+                    balance = self.check_account_balance(id)
+                    if balance != sys.float_info.min:
+                        message = "The account has: " + str(balance) + "$"
+                    else:
+                        message = "Invalid id"
+                    connection.send(message.encode())
+                    print("Sent to ATM from protocol 4")
+
     def handle_atm(self, connection_id):
         """After a connecting to an ATM, the function is in charge of giving service to the ATM and
         handle requests from the ATM - the function is used as a thread"""
@@ -60,56 +111,11 @@ class Bank:
             if len(data) == 0:
                 continue
             data_parts = data.split("*")  # The sent data has * to divide it's parts
-            if data_parts[0] == "1":
-                print("\nProtocol 1")
-                id = data_parts[1]
-                name = data_parts[2]
-                code = data_parts[3]
-                balance = float(data_parts[4])
-                self.services_lock()  # Lock balance services
-                if self.create_an_account(id, name, code, balance):  # Create an account
-                    message = "Account Created.\n"
-                else:
-                    message = "Id is taken. You are an impostor\n"
-                self.services_unlock()  # Unlock balance services
-                connection.send(message.encode())
-                print("Sent to ATM from protocol 1")
-            elif data_parts[0] == "2":
-                print("\nProtocol 2")
-                id = data_parts[1]
-                code = data_parts[2]
-                if self.validate_secret_code(id, code):
-                    message = "Yes, the code matches the id\n"
-                else:
-                    message = "No, the code doesn't match the id\n"
-                connection.send(message.encode())
-                print("Sent to ATM from protocol 2")
-            elif data_parts[0] == "3":
-                print("\nProtocol 3")
-                from_id = data_parts[1]
-                code = data_parts[2]
-                to_id = data_parts[3]
-                money = float(data_parts[4])
-                self.services_lock()  # Lock balance services
-                message = self.make_a_transaction(from_id, code, to_id, money)
-                self.services_unlock()  # Unlock balance services
-                connection.send(message.encode())
-                print("Sent to ATM from protocol 3")
-            elif data_parts[0] == "4":
-                print("\nProtocol 4")
-                id = data_parts[1]
-                self.services_lock()  # Lock balance services
-                balance = self.check_account_balance(id)
-                self.services_unlock()  # Unlock balance services
-                if balance != sys.float_info.min:
-                    message = "The account has: " + str(balance) + "$"
-                else:
-                    message = "Invalid id"
-                connection.send(message.encode())
-                print("Sent to ATM from protocol 4")
-            elif data_parts[0] == "5":
+            if data_parts[0] == "5":
                 print("\nProtocol 5")
                 atm_working = False
+            else:
+                self.task_queue.append({connection_id: data_parts})
         del self.connected_atms[connection_id]
         print("Bye ATM!")
         print("We now have " + str(len(self.connected_atms)) + " connected ATMs")
@@ -142,8 +148,11 @@ class Bank:
         self.bank_records = Bank.get_records()  # A list that contains dictionaries that each is an account in the bank
         self.thread_count = 0  # Count how many threads ran so far - it gives a unique id to a thread
         self.records_lock = False
+        self.task_queue = []
         connection_thread = threading.Thread(target=self.connect_to_atms)
         connection_thread.start()  # Start the thread that waits for the atms to connect
+        tasks_thread = threading.Thread(target=self.handle_tasks)
+        tasks_thread.start()  # Start the thread that handles the tasks from the ATMs
 
     def save_records(self):
         """The function saves the list of accounts that we used in the bank in a text file"""
