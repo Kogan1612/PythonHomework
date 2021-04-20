@@ -27,27 +27,8 @@ class Bank:
             main_thread.start()  # Start the thread that handles the atm's requests
         bank_socket.close()
 
-    def services_lock(self):
-        """The function locks the balance services.
-        If the services are already locked the function will wait until they are unlocked and then it will lock them."""
-        # Lock if someone is already using the bank's balance services
-        if self.records_lock:
-            print("Lock is activated. Need to wait.")
-            self.wait_for_lock_to_end()
-        print("Locked")
-        self.records_lock = True
-
-    def wait_for_lock_to_end(self):
-        """The function waits until the services are unlocked."""
-        while self.records_lock:
-            pass
-
-    def services_unlock(self):
-        """The function unlocks the balance services."""
-        print("Unlocked")
-        self.records_lock = False
-
     def handle_tasks(self):
+        """The function manages the tasks that the bank receives from all of the ATMs talking to it."""
         while True:
             if len(self.task_queue) != 0:
                 task = self.task_queue.pop(0)  # Take the first task out of the queue
